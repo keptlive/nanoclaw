@@ -597,7 +597,7 @@ export async function processTaskIpc(
             fs.rmSync(targetDir, { recursive: true, force: true });
           } else {
             logger.info(
-              { handle: data.handle, ...result },
+              { ...result, handle: data.handle },
               'create_agent: agent created successfully',
             );
           }
