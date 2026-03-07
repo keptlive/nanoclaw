@@ -170,7 +170,7 @@ export function manifestToRegisteredGroup(
   agentwireAgentId?: string,
 ): { jid: string; group: RegisteredGroup } {
   const handle = manifest.identity.handle;
-  const jid = manifest.channel_binding?.jid || `aw:${handle}`;
+  const jid = manifest.channel_binding?.jid || `agentwire:${handle}`;
 
   const mcpServers: Record<string, McpServerConfig> | undefined = manifest
     .dependencies?.mcp_servers
@@ -402,7 +402,7 @@ export async function applyManifest(
   }
 
   const hash = manifestHash(manifestPath);
-  const tentativeJid = manifest.channel_binding?.jid || `aw:${handle}`;
+  const tentativeJid = manifest.channel_binding?.jid || `agentwire:${handle}`;
 
   // Check idempotency
   const existingHash = deps.getManifestHash(tentativeJid);
