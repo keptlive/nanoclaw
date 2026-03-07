@@ -22,9 +22,15 @@ RUN apt-get update && apt-get install -y \
     libcups2 \
     libdrm2 \
     libxshmfence1 \
+    python3 \
+    python3-pip \
+    python3-venv \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Python research libraries
+RUN pip3 install --break-system-packages requests arxiv semanticscholar beautifulsoup4 lxml
 
 # Set Chromium path for agent-browser
 ENV AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium

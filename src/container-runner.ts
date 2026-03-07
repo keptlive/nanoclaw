@@ -214,13 +214,28 @@ function buildVolumeMounts(
  * Read allowed secrets from .env for passing to the container via stdin.
  * Secrets are never written to disk or mounted as files.
  */
-function readSecrets(): Record<string, string> {
-  return readEnvFile([
+function readSecrets(group: RegisteredGroup): Record<string, string> {
+  const secrets = readEnvFile([
     'CLAUDE_CODE_OAUTH_TOKEN',
     'ANTHROPIC_API_KEY',
     'ANTHROPIC_BASE_URL',
     'ANTHROPIC_AUTH_TOKEN',
+    'CLAUDE_MODEL',
+    'AGENTWIRE_API_KEY',
+    'AGENTWIRE_URL',
   ]);
+
+  // Per-group AgentWire agent ID (auto-created on group registration)
+  if (group.agentwireAgentId) {
+    secrets.AGENTWIRE_AGENT_ID = group.agentwireAgentId;
+  }
+
+  // Per-group model override
+  if (group.model) {
+    secrets.CLAUDE_MODEL = group.model;
+  }
+
+  return secrets;
 }
 
 function buildContainerArgs(
@@ -310,7 +325,7 @@ export async function runContainerAgent(
     let stderrTruncated = false;
 
     // Pass secrets via stdin (never written to disk or mounted as files)
-    input.secrets = readSecrets();
+    input.secrets = readSecrets(group);
     container.stdin.write(JSON.stringify(input));
     container.stdin.end();
     // Remove secrets from input so they don't appear in logs

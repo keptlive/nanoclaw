@@ -40,6 +40,8 @@ export interface RegisteredGroup {
   containerConfig?: ContainerConfig;
   requiresTrigger?: boolean; // Default: true for groups, false for solo chats
   isMain?: boolean; // True for the main control group (no trigger, elevated privileges)
+  agentwireAgentId?: string; // AgentWire agent ID (auto-created on group registration)
+  model?: string; // Claude model override (e.g. 'claude-sonnet-4-5-20250514')
 }
 
 export interface NewMessage {

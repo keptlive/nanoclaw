@@ -432,9 +432,11 @@ async function runQuery(
         'TeamCreate', 'TeamDelete', 'SendMessage',
         'TodoWrite', 'ToolSearch', 'Skill',
         'NotebookEdit',
-        'mcp__nanoclaw__*'
+        'mcp__nanoclaw__*',
+        'mcp__agentwire__*'
       ],
       env: sdkEnv,
+      model: sdkEnv.CLAUDE_MODEL || undefined,
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       settingSources: ['project', 'user'],
@@ -448,6 +450,16 @@ async function runQuery(
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
           },
         },
+        // AgentWire MCP: connect to platform tools (email, SMS, memory, etc.) via SSE
+        ...(sdkEnv.AGENTWIRE_API_KEY && sdkEnv.AGENTWIRE_AGENT_ID ? {
+          agentwire: {
+            type: 'sse' as const,
+            url: `${sdkEnv.AGENTWIRE_URL || 'https://agentwire.run'}/sse?agentId=${sdkEnv.AGENTWIRE_AGENT_ID}`,
+            headers: {
+              Authorization: `Bearer ${sdkEnv.AGENTWIRE_API_KEY}`,
+            },
+          },
+        } : {}),
       },
       hooks: {
         PreCompact: [{ hooks: [createPreCompactHook(containerInput.assistantName)] }],
