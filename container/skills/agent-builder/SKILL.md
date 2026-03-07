@@ -160,7 +160,7 @@ For any MCP server needing credentials the user hasn't provided:
 
 ## Step 6: Generate wireclaw.yaml
 
-Write to `/workspace/project/groups/{handle}/wireclaw.yaml`:
+Write to `/workspace/shared/manifests/{handle}/wireclaw.yaml`:
 
 ```yaml
 version: "1.0"
@@ -196,7 +196,7 @@ Notes:
 
 ## Step 7: Generate claude.md
 
-Write to `/workspace/project/groups/{handle}/claude.md` AFTER all research is done.
+Write to `/workspace/shared/manifests/{handle}/claude.md` AFTER all research is done.
 
 Structure:
 
@@ -271,23 +271,27 @@ When you learn something important:
 
 ## Step 8: Apply
 
-Run the manifest CLI:
+Use the `mcp__nanoclaw__create_agent` tool with the handle:
 
-```bash
-cd /workspace/project && npx tsx src/manifest-cli.ts apply groups/{handle}/wireclaw.yaml
+```
+mcp__nanoclaw__create_agent({ handle: "{handle}" })
 ```
 
-Expected output:
-- `[+] {handle} → aw:{handle} (created)` — success
-- `Handle "{handle}" is already taken` — pick a different handle
-- Parse errors — fix the YAML
+This tells the host to:
+1. Read draft files from `shared/manifests/{handle}/`
+2. Validate the manifest with Zod schema
+3. Copy validated files to `groups/{handle}/`
+4. Create the AgentWire agent at `{handle}@agentwire.email`
+5. Send an intro email to the owner
+
+If the handle is taken or validation fails, the host logs the error and cleans up.
 
 ## Step 9: Verify
 
-1. Check apply output shows "created"
+1. Check the tool response for success
 2. Agent email: `{handle}@agentwire.email`
-3. Intro email sent (check logs)
-4. Optionally test with a message
+3. Intro email sent (check host logs)
+4. Optionally send a test email to the agent
 
 Report to user: agent name, handle, email, skills, MCP servers, any skipped deps.
 

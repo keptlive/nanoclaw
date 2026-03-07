@@ -15,6 +15,7 @@ import {
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
+  SHARED_DIR,
   TIMEZONE,
 } from './config.js';
 import { readEnvFile } from './env.js';
@@ -96,6 +97,17 @@ function buildVolumeMounts(
       hostPath: projectRoot,
       containerPath: '/workspace/project',
       readonly: true,
+    });
+
+    // Shared writable space for main agent (agent creation drafts, exports, etc.)
+    // Mounted separately from project root so main can write here without
+    // gaining write access to source code.
+    fs.mkdirSync(SHARED_DIR, { recursive: true });
+    ensureContainerWritable(SHARED_DIR);
+    mounts.push({
+      hostPath: SHARED_DIR,
+      containerPath: '/workspace/shared',
+      readonly: false,
     });
 
     // Shadow .env so the agent cannot read secrets from the mounted project root.

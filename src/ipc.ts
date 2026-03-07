@@ -3,7 +3,13 @@ import path from 'path';
 
 import { CronExpressionParser } from 'cron-parser';
 
-import { DATA_DIR, IPC_POLL_INTERVAL, TIMEZONE } from './config.js';
+import {
+  DATA_DIR,
+  GROUPS_DIR,
+  IPC_POLL_INTERVAL,
+  SHARED_DIR,
+  TIMEZONE,
+} from './config.js';
 import { AvailableGroup } from './container-runner.js';
 import {
   createTask,
@@ -227,6 +233,10 @@ export async function processTaskIpc(
     requiresTrigger?: boolean;
     containerConfig?: RegisteredGroup['containerConfig'];
     manifestPath?: string;
+    // For create_agent
+    handle?: string;
+    manifest_yaml?: string;
+    system_prompt?: string;
   },
   sourceGroup: string, // Verified identity from IPC directory
   isMain: boolean, // Verified from directory path
@@ -528,6 +538,80 @@ export async function processTaskIpc(
         logger.warn(
           { data },
           'Invalid register_group request - missing required fields',
+        );
+      }
+      break;
+
+    case 'create_agent':
+      // Create a new agent from draft files in shared/manifests/{handle}/
+      // Main only. Reads wireclaw.yaml from shared dir, validates with Zod,
+      // copies to groups/{handle}/, and applies via applyManifest().
+      if (!isMain) {
+        logger.warn(
+          { sourceGroup },
+          'Unauthorized create_agent attempt blocked',
+        );
+        break;
+      }
+
+      if (data.handle && isValidGroupFolder(data.handle)) {
+        const draftDir = path.join(SHARED_DIR, 'manifests', data.handle);
+        const draftManifest = path.join(draftDir, 'wireclaw.yaml');
+
+        if (!fs.existsSync(draftManifest)) {
+          logger.warn(
+            { handle: data.handle, path: draftManifest },
+            'create_agent: manifest not found in shared/manifests/',
+          );
+          break;
+        }
+
+        // Copy draft files to the target group directory
+        const targetDir = path.join(GROUPS_DIR, data.handle);
+        fs.mkdirSync(targetDir, { recursive: true });
+
+        // Copy all files from draft to target (wireclaw.yaml, claude.md, etc.)
+        for (const file of fs.readdirSync(draftDir)) {
+          fs.copyFileSync(
+            path.join(draftDir, file),
+            path.join(targetDir, file),
+          );
+        }
+
+        // Apply the manifest from the target location (full Zod validation)
+        const targetManifest = path.join(targetDir, 'wireclaw.yaml');
+        try {
+          const result = await applyManifest(targetManifest, {
+            registerGroup: deps.registerGroup,
+            getManifestHash,
+            setManifestHash,
+            getRegisteredGroup,
+          });
+
+          if (result.status === 'error') {
+            // Validation failed — clean up the target directory
+            logger.warn(
+              { handle: data.handle, error: result.error },
+              'create_agent: manifest validation failed, cleaning up',
+            );
+            fs.rmSync(targetDir, { recursive: true, force: true });
+          } else {
+            logger.info(
+              { handle: data.handle, ...result },
+              'create_agent: agent created successfully',
+            );
+          }
+        } catch (err) {
+          logger.warn(
+            { handle: data.handle, err },
+            'create_agent: applyManifest failed',
+          );
+          fs.rmSync(targetDir, { recursive: true, force: true });
+        }
+      } else {
+        logger.warn(
+          { handle: data.handle },
+          'create_agent: invalid or missing handle',
         );
       }
       break;

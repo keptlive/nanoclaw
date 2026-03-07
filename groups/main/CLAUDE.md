@@ -62,17 +62,19 @@ This is the **main channel**, which has elevated privileges.
 
 ## Container Mounts
 
-Main has read-only access to the project and read-write access to its group folder:
+Main has read-only access to the project, read-write access to its group folder, and read-write access to the shared space:
 
 | Container Path | Host Path | Access |
 |----------------|-----------|--------|
 | `/workspace/project` | Project root | read-only |
 | `/workspace/group` | `groups/main/` | read-write |
+| `/workspace/shared` | `shared/` | read-write |
 
 Key paths inside the container:
 - `/workspace/project/store/messages.db` - SQLite database
 - `/workspace/project/store/messages.db` (registered_groups table) - Group config
 - `/workspace/project/groups/` - All group folders
+- `/workspace/shared/manifests/` - Draft agent manifests (for `create_agent`)
 
 ---
 

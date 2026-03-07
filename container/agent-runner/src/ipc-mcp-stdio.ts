@@ -333,6 +333,52 @@ Use available_groups.json to find the JID for a group. The folder name must be c
   },
 );
 
+server.tool(
+  'create_agent',
+  `Create a new WireClaw agent from draft files in /workspace/shared/manifests/{handle}/. Main group only.
+
+Before calling this tool, write these files using the Write tool:
+1. /workspace/shared/manifests/{handle}/wireclaw.yaml — the agent manifest
+2. /workspace/shared/manifests/{handle}/claude.md — the system prompt
+
+Then call this tool with just the handle. The host will validate the manifest, copy files to groups/{handle}/, register the agent on AgentWire, and send an intro email.
+
+Handle rules: lowercase alphanumeric, hyphens, underscores. Regex: ^[a-z0-9][a-z0-9_-]{0,63}$`,
+  {
+    handle: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/).describe('Agent handle (becomes {handle}@agentwire.email)'),
+  },
+  async (args) => {
+    if (!isMain) {
+      return {
+        content: [{ type: 'text' as const, text: 'Only the main group can create agents.' }],
+        isError: true,
+      };
+    }
+
+    // Verify draft files exist before sending IPC
+    const draftDir = `/workspace/shared/manifests/${args.handle}`;
+    const manifestPath = `${draftDir}/wireclaw.yaml`;
+    if (!fs.existsSync(manifestPath)) {
+      return {
+        content: [{ type: 'text' as const, text: `Draft manifest not found at ${manifestPath}. Write the wireclaw.yaml file there first, then call this tool.` }],
+        isError: true,
+      };
+    }
+
+    const data = {
+      type: 'create_agent',
+      handle: args.handle,
+      timestamp: new Date().toISOString(),
+    };
+
+    writeIpcFile(TASKS_DIR, data);
+
+    return {
+      content: [{ type: 'text' as const, text: `Agent "${args.handle}" creation requested. The host will validate the manifest from shared/manifests/${args.handle}/, copy to groups/${args.handle}/, and register at ${args.handle}@agentwire.email. Check logs for result.` }],
+    };
+  },
+);
+
 // Start the stdio transport
 const transport = new StdioServerTransport();
 await server.connect(transport);
