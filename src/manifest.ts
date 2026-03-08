@@ -167,7 +167,7 @@ export function normalizeMcpServer(
  */
 export function manifestToRegisteredGroup(
   manifest: GroupManifest,
-  agentwireAgentId?: string,
+  opts: { agentwireAgentId?: string; assistantName?: string },
 ): { jid: string; group: RegisteredGroup } {
   const handle = manifest.identity.handle;
   const jid = manifest.channel_binding?.jid || `agentwire:${handle}`;
@@ -180,6 +180,11 @@ export function manifestToRegisteredGroup(
         ),
       )
     : undefined;
+
+  // isMain is derived from ASSISTANT_NAME, not declared in the manifest.
+  // This prevents a rogue manifest from bypassing trigger requirements.
+  const assistantName = opts.assistantName || '';
+  const isMain = assistantName !== '' && handle.toLowerCase() === assistantName.toLowerCase();
 
   const group: RegisteredGroup = {
     name: manifest.identity.group_name,
@@ -197,7 +202,8 @@ export function manifestToRegisteredGroup(
       envVars: manifest.dependencies?.env_vars,
     },
     requiresTrigger: manifest.channel_binding?.requires_trigger ?? true,
-    agentwireAgentId,
+    isMain,
+    agentwireAgentId: opts.agentwireAgentId,
     model: manifest.context?.model,
   };
 
@@ -205,8 +211,11 @@ export function manifestToRegisteredGroup(
 }
 
 /**
- * Create an AgentWire agent for the manifest handle.
- * Returns agentId on success, undefined if not configured or handle taken.
+ * Create or adopt an AgentWire agent for the manifest handle.
+ *
+ * On 409 (handle taken), checks if the handle belongs to us by listing
+ * our agents. If it does, returns the existing agentId. If not, fails.
+ * This is secure because GET /api/agents is scoped to the API key owner.
  */
 async function createAgentWireAgent(
   handle: string,
@@ -215,13 +224,15 @@ async function createAgentWireAgent(
   if (!env.AGENTWIRE_API_KEY) return {};
 
   const url = env.AGENTWIRE_URL || 'https://agentwire.run';
+  const headers = {
+    Authorization: `Bearer ${env.AGENTWIRE_API_KEY}`,
+    'Content-Type': 'application/json',
+  };
+
   try {
     const res = await fetch(`${url}/api/agents`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.AGENTWIRE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ handle }),
     });
     if (res.ok) {
@@ -238,6 +249,15 @@ async function createAgentWireAgent(
     }
     const err = (await res.json()) as { error: string };
     if (res.status === 409 || err.error?.toLowerCase().includes('taken')) {
+      // Handle taken — check if it belongs to us
+      const existing = await lookupOwnedAgent(handle, url, headers.Authorization);
+      if (existing) {
+        logger.info(
+          { handle, agentId: existing },
+          'Adopted existing AgentWire agent',
+        );
+        return { agentId: existing };
+      }
       return { handleTaken: true };
     }
     logger.warn(
@@ -248,6 +268,30 @@ async function createAgentWireAgent(
   } catch (err) {
     logger.warn({ handle, err }, 'AgentWire API call failed');
     return {};
+  }
+}
+
+/**
+ * Look up an agent by handle in our own agent list.
+ * Returns agentId if found, undefined if not ours.
+ */
+async function lookupOwnedAgent(
+  handle: string,
+  baseUrl: string,
+  authHeader: string,
+): Promise<string | undefined> {
+  try {
+    const res = await fetch(`${baseUrl}/api/agents`, {
+      headers: { Authorization: authHeader },
+    });
+    if (!res.ok) return undefined;
+    const data = (await res.json()) as {
+      agents: { agentId: string; handle: string }[];
+    };
+    const match = data.agents.find((a) => a.handle === handle);
+    return match?.agentId;
+  } catch {
+    return undefined;
   }
 }
 
@@ -429,7 +473,14 @@ export async function applyManifest(
     agentwireAgentId = result.agentId;
   }
 
-  const { jid, group } = manifestToRegisteredGroup(manifest, agentwireAgentId);
+  const assistantName =
+    process.env.ASSISTANT_NAME ||
+    readEnvFile(['ASSISTANT_NAME']).ASSISTANT_NAME ||
+    '';
+  const { jid, group } = manifestToRegisteredGroup(manifest, {
+    agentwireAgentId,
+    assistantName,
+  });
 
   // If updating, preserve added_at from existing record
   if (existing) {

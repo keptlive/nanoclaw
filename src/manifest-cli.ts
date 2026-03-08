@@ -96,7 +96,7 @@ async function applyAll(targets: string[]): Promise<void> {
     console.log(`  [${icon}] ${r.handle} → ${r.jid} (${r.status})${msg}`);
     if (r.handleTaken) {
       console.log(
-        `      Handle "${r.handle}" is taken. Edit the YAML and choose a different handle.`,
+        `      Handle "${r.handle}" is taken by another account. Choose a different handle.`,
       );
     }
   }
