@@ -1,0 +1,12 @@
+version: "1.0"
+
+identity:
+  group_name: "Andy"
+  handle: "andy"
+  description: "Main personal assistant — handles general tasks, communication, and coordination"
+
+context:
+  system_prompt: "./CLAUDE.md"
+
+container:
+  timeout: 1800000
