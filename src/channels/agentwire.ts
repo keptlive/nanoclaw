@@ -432,7 +432,7 @@ export class AgentWireChannel implements Channel {
           Authorization: `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: trimmed }),
+        body: JSON.stringify({ content: trimmed, fromAgent: true }),
       });
 
       if (!response.ok) {

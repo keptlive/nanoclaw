@@ -1,4 +1,4 @@
-# NanoClaw Agent Container
+# WireClaw Agent Container
 # Runs Claude Agent SDK in isolated Linux VM with browser automation
 
 FROM node:22-slim
@@ -80,6 +80,9 @@ RUN npm install
 
 # Copy source code
 COPY agent-runner/ ./
+
+# Make source readable by node user (entrypoint recompiles at runtime)
+RUN chmod -R a+rX /app
 
 # Build TypeScript
 RUN npm run build

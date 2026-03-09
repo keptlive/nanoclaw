@@ -16,7 +16,7 @@ Adds the ability for WireClaw agents to see and understand images sent via Whats
 
 1. Initialize the skills system if not already done:
    ```bash
-   npx tsx -e "import { initNanoclawDir } from './skills-engine/init.ts'; initNanoclawDir();"
+   npx tsx -e "import { initWireclawDir } from './skills-engine/init.ts'; initWireclawDir();"
    ```
 
 2. Apply the skill:

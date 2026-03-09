@@ -22,7 +22,7 @@ groups/research/*
 !groups/main/wireclaw.yaml
 !groups/global/CLAUDE.md
 !groups/global/wireclaw-rules.md
-!groups/research/claude.md
+!groups/research/CLAUDE.md
 !groups/research/wireclaw.yaml
 
 # Secrets
@@ -40,6 +40,6 @@ groups/research/*
 .vscode/
 
 # Skills system (local per-installation state)
-.nanoclaw/
+.wireclaw/
 
 agents-sdk-docs

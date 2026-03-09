@@ -6,7 +6,7 @@ identity:
   description: "Deep research agent with maximal data reach — academic papers, business intelligence, people search, data analysis, and web investigation"
 
 context:
-  system_prompt: "./claude.md"
+  system_prompt: "./CLAUDE.md"
   model: "claude-sonnet-4-6"
 
 dependencies:

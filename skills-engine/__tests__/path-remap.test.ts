@@ -12,7 +12,7 @@ import {
   cleanup,
   createMinimalState,
   createTempDir,
-  setupNanoclawDir,
+  setupWireclawDir,
 } from './test-helpers.js';
 
 describe('path-remap', () => {
@@ -21,7 +21,7 @@ describe('path-remap', () => {
 
   beforeEach(() => {
     tmpDir = createTempDir();
-    setupNanoclawDir(tmpDir);
+    setupWireclawDir(tmpDir);
     createMinimalState(tmpDir);
     process.chdir(tmpDir);
   });

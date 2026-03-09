@@ -8,7 +8,7 @@ export function createTempDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'wireclaw-test-'));
 }
 
-export function setupNanoclawDir(tmpDir: string): void {
+export function setupWireclawDir(tmpDir: string): void {
   fs.mkdirSync(path.join(tmpDir, '.wireclaw', 'base', 'src'), {
     recursive: true,
   });
