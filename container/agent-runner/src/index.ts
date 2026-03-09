@@ -567,6 +567,27 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Load group-level .env file if it exists. These are agent-managed env vars
+  // (e.g. API tokens the agent collected itself). They're set in process.env
+  // so Bash commands and tools can access them.
+  const groupEnvPath = '/workspace/group/.env';
+  if (fs.existsSync(groupEnvPath)) {
+    for (const line of fs.readFileSync(groupEnvPath, 'utf-8').split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx < 1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      let val = trimmed.slice(eqIdx + 1).trim();
+      // Strip surrounding quotes
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      process.env[key] = val;
+    }
+    log(`Loaded group .env (${groupEnvPath})`);
+  }
+
   // Build SDK env: merge secrets into process.env for the SDK only.
   // Secrets never touch process.env itself, so Bash subprocesses can't see them.
   const sdkEnv: Record<string, string | undefined> = { ...process.env };
