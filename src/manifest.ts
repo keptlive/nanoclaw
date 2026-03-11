@@ -25,7 +25,7 @@ const McpServerSpec = z.union([
   z.object({
     command: z.string().optional(),
     args: z.array(z.string()).optional(),
-    type: z.enum(['sse', 'stdio']).default('stdio'),
+    type: z.enum(['sse', 'http', 'streamable-http', 'stdio']).default('stdio'),
     url: z.string().optional(),
     headers: z.record(z.string(), z.string()).optional(),
     env: z.record(z.string(), z.string()).optional(),
@@ -155,7 +155,7 @@ export function normalizeMcpServer(
   return {
     command: spec.command,
     args: spec.args,
-    type: (spec.type as 'sse' | 'stdio') || 'stdio',
+    type: (spec.type as 'sse' | 'http' | 'streamable-http' | 'stdio') || 'stdio',
     url: spec.url,
     headers: spec.headers,
     env: spec.env,

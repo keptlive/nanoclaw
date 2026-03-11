@@ -62,6 +62,31 @@ async function createAgentWireAgent(
       return data.agentId;
     }
     const err = (await res.json()) as { error: string };
+    if (res.status === 409 || err.error?.toLowerCase().includes('taken')) {
+      // Handle taken — check if it belongs to us
+      try {
+        const listRes = await fetch(`${url}/api/agents`, {
+          headers: { Authorization: `Bearer ${env.AGENTWIRE_API_KEY}` },
+        });
+        if (listRes.ok) {
+          const data = (await listRes.json()) as {
+            agents: { agentId: string; handle: string }[];
+          };
+          const match = data.agents.find((a) => a.handle === handle);
+          if (match) {
+            logger.info(
+              { handle, agentId: match.agentId },
+              'Adopted existing AgentWire agent',
+            );
+            return match.agentId;
+          }
+        }
+      } catch {
+        /* lookup failed, fall through */
+      }
+      logger.warn({ handle }, 'Handle taken by another account');
+      return undefined;
+    }
     logger.warn(
       { handle, status: res.status, error: err.error },
       'Failed to create AgentWire agent',

@@ -461,10 +461,7 @@ export async function runContainerAgent(
     if (group.containerConfig?.mcpServers) {
       input.mcpServers = group.containerConfig.mcpServers;
     }
-    if (group.containerConfig?.envVars) {
-      // Also pass scoped env vars that aren't in the always-required set
-      // so the agent-runner can resolve $VAR references in MCP server env
-    }
+
 
     container.stdin.write(JSON.stringify(input));
     container.stdin.end();
